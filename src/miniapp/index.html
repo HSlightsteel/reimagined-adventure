@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>TikRec — Stream Recorder</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/miniapp/style.css">
+</head>
+<body>
+<div class="bg-mesh">
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+</div>
+<svg style="display:none">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+  <symbol id="i-lib" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-vid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></symbol>
+  <symbol id="i-live" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M4.93 4.93a10 10 0 000 14.14M19.07 4.93a10 10 0 010 14.14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor"/></symbol>
+  <symbol id="i-rec" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6" fill="currentColor"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></symbol>
+</svg>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="dot"></span> TikRec</div>
+    <div class="sb-section">Home</div>
+    <button class="sb-item active" data-page="dashboard"><svg class="sb-icon"><use href="#i-home"/></svg> Dashboard</button>
+    <div class="sb-section">Studio</div>
+    <button class="sb-item" data-page="library"><svg class="sb-icon"><use href="#i-lib"/></svg> Library</button>
+    <button class="sb-item" data-page="recordings"><svg class="sb-icon"><use href="#i-vid"/></svg> Recordings</button>
+    <button class="sb-item" data-page="live"><svg class="sb-icon"><use href="#i-live"/></svg> Live</button>
+    <div class="sb-section">Community</div>
+    <button class="sb-item" data-page="search"><svg class="sb-icon"><use href="#i-search"/></svg> Search</button>
+    <div class="sb-footer">TikRec v1.0</div>
+  </aside>
+
+  <main class="main">
+    <div id="page-dashboard" class="page active">
+      <div class="page-hdr"><h1><svg class="pg-icon"><use href="#i-home"/></svg> Dashboard</h1></div>
+      <div id="dash-content"></div>
+    </div>
+    <div id="page-library" class="page">
+      <div class="page-hdr">
+        <div><h1><svg class="pg-icon"><use href="#i-lib"/></svg> Library</h1><p>Manage your creators</p></div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn btn-accent" onclick="syncDriveStreams()"><svg class="btn-svg"><use href="#i-sync"/></svg> Retrieve</button>
+          <input class="search-sm" placeholder="Filter creators...">
+        </div>
+      </div>
+      <div id="library-content"></div>
+    </div>
+    <div id="page-recordings" class="page">
+      <div class="page-hdr"><h1><svg class="pg-icon"><use href="#i-vid"/></svg> Recordings</h1></div>
+      <div id="rec-content"></div>
+    </div>
+    <div id="page-live" class="page">
+      <div class="page-hdr"><h1><svg class="pg-icon"><use href="#i-live"/></svg> Live</h1></div>
+      <div id="live-content"></div>
+    </div>
+    <div id="page-search" class="page">
+      <div class="page-hdr"><h1><svg class="pg-icon"><use href="#i-search"/></svg> Search</h1><p>Add creators to your list</p></div>
+      <div class="search-card">
+        <h3>Enter TikTok username</h3>
+        <div class="search-row">
+          <input class="search-input" id="search-input" placeholder="Search username...">
+          <button class="btn btn-accent" onclick="searchUser($('#search-input').value)"><svg class="btn-svg"><use href="#i-search"/></svg> Search</button>
+        </div>
+        <div class="search-tags"><span>Try:</span><button class="search-tag" onclick="searchExample('charlidamelio')">CHARLIDAMELIO</button><button class="search-tag" onclick="searchExample('mrbeast')">MRBEAST</button></div>
+      </div>
+      <div id="search-results" style="margin-top:16px"></div>
+    </div>
+  </main>
+</div>
+
+<nav class="mob-tabs"><div class="mob-tabs-inner">
+  <button class="mob-tab active" data-page="dashboard"><svg class="mob-icon"><use href="#i-home"/></svg>Home</button>
+  <button class="mob-tab" data-page="library"><svg class="mob-icon"><use href="#i-lib"/></svg>Library</button>
+  <button class="mob-tab" data-page="live"><svg class="mob-icon"><use href="#i-live"/></svg>Live</button>
+  <button class="mob-tab" data-page="search"><svg class="mob-icon"><use href="#i-search"/></svg>Search</button>
+  <button class="mob-tab" data-page="recordings"><svg class="mob-icon"><use href="#i-more"/></svg>More</button>
+</div></nav>
+
+<div class="modal" id="modal">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <div class="modal-inner"><video id="modal-video" controls></video></div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/miniapp/app.js"></script>
+</body>
+</html>
