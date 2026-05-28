@@ -209,8 +209,7 @@ export class TelegramUploader {
         '-y', '-i', filePath,
         '-c', 'copy',
         '-f', 'segment',
-        '-segment_time', '3600',
-        '-fs', String(Math.floor(MAX_UPLOAD_SIZE)),
+        '-segment_time', '2700',
         '-reset_timestamps', '1',
         pattern,
       ]);
@@ -275,47 +274,59 @@ export class TelegramUploader {
         // File exceeds 1.9GB — split it into uploadable parts
         const parts = await this.splitFile(filePath);
 
-        // Send header message
-        await this.sendTopicMessage(threadId,
-          `📹 <b>${username}</b> - ${totalSize}, sending in <b>${parts.length} parts</b>...`
-        );
+        try {
+          // Send header message
+          await this.sendTopicMessage(threadId,
+            `📹 <b>${username}</b> - ${totalSize}, sending in <b>${parts.length} parts</b>...`
+          );
 
-        for (let i = 0; i < parts.length; i++) {
-          const partPath = parts[i]!;
-          const partFilename = basename(partPath);
-          const partStat = statSync(partPath);
-          const partSizeMB = Math.round(partStat.size / (1024 * 1024));
-          const partDurationStr = await this.getVideoDuration(partPath);
-          const partDurationSec = await this.getVideoDurationSeconds(partPath);
-          const thumbUrl = await this.generateThumbnail(partPath, partFilename.replace('.mp4', ''));
+          for (let i = 0; i < parts.length; i++) {
+            const partPath = parts[i]!;
+            const partFilename = basename(partPath);
+            const partStat = statSync(partPath);
+            const partSizeMB = Math.round(partStat.size / (1024 * 1024));
+            const partDurationStr = await this.getVideoDuration(partPath);
+            const partDurationSec = await this.getVideoDurationSeconds(partPath);
+            const thumbUrl = await this.generateThumbnail(partPath, partFilename.replace('.mp4', ''));
 
-          const caption = `🎬 <b>${username}</b> - Part ${i + 1}/${parts.length}\n⏱ ${partDurationStr} · 💾 ${this.formatSize(partStat.size)}\nRecorded by @tiikstreambot`;
+            const caption = `🎬 <b>${username}</b> - Part ${i + 1}/${parts.length}\n⏱ ${partDurationStr} · 💾 ${this.formatSize(partStat.size)}\nRecorded by @tiikstreambot`;
 
-          const msgId = await this.sendVideo(client, partPath, threadId, caption);
+            const msgId = await this.sendVideo(client, partPath, threadId, caption);
 
-          await this.db.add({
-            filename: partFilename,
-            username,
-            sizeMB: partSizeMB,
-            duration: partDurationSec,
-            date: new Date().toISOString(),
-            thumb: thumbUrl,
-            messageId: msgId,
-            isPart: true,
-            partIndex: i + 1,
-            totalParts: parts.length
-          });
+            await this.db.add({
+              filename: partFilename,
+              username,
+              sizeMB: partSizeMB,
+              duration: partDurationSec,
+              date: new Date().toISOString(),
+              thumb: thumbUrl,
+              messageId: msgId,
+              isPart: true,
+              partIndex: i + 1,
+              totalParts: parts.length
+            });
 
-          // Clean up the split file after uploading
-          try { await fs.unlink(partPath); } catch {}
+            // Clean up the split file after uploading
+            try { await fs.unlink(partPath); } catch {}
+          }
+
+          // Send completion message
+          await this.sendTopicMessage(threadId,
+            `✅ <b>${username}</b> - All <b>${parts.length} parts</b> sent.`
+          );
+
+          logger.info({ file: basename(filePath), parts: parts.length }, 'All parts uploaded successfully');
+        } finally {
+          // Clean up ANY remaining split files on failure
+          for (const partPath of parts) {
+            try {
+              if (existsSync(partPath)) {
+                await fs.unlink(partPath);
+                logger.debug({ file: basename(partPath) }, 'Cleaned up leaked split part');
+              }
+            } catch {}
+          }
         }
-
-        // Send completion message
-        await this.sendTopicMessage(threadId,
-          `✅ <b>${username}</b> - All <b>${parts.length} parts</b> sent.`
-        );
-
-        logger.info({ file: basename(filePath), parts: parts.length }, 'All parts uploaded successfully');
       } else {
         // File is within limits — send directly
         const durationStr = await this.getVideoDuration(filePath);
@@ -344,6 +355,7 @@ export class TelegramUploader {
 
     } catch (err) {
       logger.error({ err, file: basename(filePath) }, 'Telegram upload failed');
+      throw err;
     }
   }
 

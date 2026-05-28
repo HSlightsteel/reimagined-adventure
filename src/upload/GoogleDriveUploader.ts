@@ -138,6 +138,7 @@ export class GoogleDriveUploader {
           body: createReadStream(filePath),
         },
         fields: 'id, name, size',
+        uploadType: 'resumable',
       });
 
       const fileId = response.data.id!;

@@ -252,10 +252,19 @@ export class TikTokRecorder {
         logger.debug({ user, attempt }, 'Checking live status...');
         
         try {
-          isLive = await this.api.isRoomAlive(roomId);
-          if (isLive) break; // They are back online!
+          const currentRoomId = await this.api.getRoomIdFromUser(user);
+          if (currentRoomId === roomId) {
+            isLive = await this.api.isRoomAlive(roomId);
+            if (isLive) break; // They are back online in the same room!
+          } else {
+            // Room ID changed or no longer live
+            isLive = false;
+            break;
+          }
         } catch(err) {
-          // ignore error and retry
+          // If resolving fails, they are offline
+          isLive = false;
+          break;
         }
       }
 
