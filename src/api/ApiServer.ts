@@ -65,13 +65,12 @@ export class ApiServer {
 
     try {
       if (path === '/miniapp' || path === '/miniapp/') {
-        return await this.serveFile(res, join(this.miniappDir, 'index.html'), 'text/html');
+        return await this.serveMiniappFile(res, 'index.html');
       }
-      if (path === '/miniapp/style.css') {
-        return await this.serveFile(res, join(this.miniappDir, 'style.css'), 'text/css');
-      }
-      if (path === '/miniapp/app.js') {
-        return await this.serveFile(res, join(this.miniappDir, 'app.js'), 'application/javascript');
+      if (path.startsWith('/miniapp/')) {
+        const subPath = path.substring('/miniapp/'.length);
+        if (subPath.includes('..')) return this.json(res, { error: 'Invalid' }, 400);
+        return await this.serveMiniappFile(res, subPath);
       }
 
       // Avatar proxy
@@ -608,6 +607,32 @@ export class ApiServer {
       } else {
         res.end();
       }
+    }
+  }
+
+  private async serveMiniappFile(res: ServerResponse, relativePath: string): Promise<void> {
+    const fullPath = join(this.miniappDir, relativePath);
+    if (!existsSync(fullPath)) {
+      this.json(res, { error: 'Not found' }, 404);
+      return;
+    }
+
+    const ext = relativePath.split('.').pop()?.toLowerCase();
+    let contentType = 'application/octet-stream';
+    if (ext === 'html') contentType = 'text/html';
+    else if (ext === 'css') contentType = 'text/css';
+    else if (ext === 'js') contentType = 'application/javascript';
+    else if (ext === 'json') contentType = 'application/json';
+    else if (ext === 'png') contentType = 'image/png';
+    else if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg';
+    else if (ext === 'svg') contentType = 'image/svg+xml';
+    else if (ext === 'ico') contentType = 'image/x-icon';
+
+    try {
+      res.writeHead(200, { 'Content-Type': contentType });
+      createReadStream(fullPath).pipe(res);
+    } catch {
+      this.json(res, { error: 'Internal error' }, 500);
     }
   }
 }

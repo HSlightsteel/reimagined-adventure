@@ -1,0 +1,8 @@
+{
+  "name": "StreamCap",
+  "description": "A light and fast live stream recorder UI designed for Telegram Mini Apps with cloud sync integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

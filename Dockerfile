@@ -1,6 +1,14 @@
 # --- Build Stage ---
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Compile static Next.js frontend
+COPY streamcap/package*.json ./streamcap/
+RUN cd streamcap && npm install --ignore-scripts
+COPY streamcap/ ./streamcap/
+RUN cd streamcap && npm run build
+
+# Compile TypeScript backend
 COPY package*.json tsconfig.json tsup.config.ts ./
 RUN npm ci --ignore-scripts
 COPY src/ ./src
@@ -20,8 +28,13 @@ RUN npm ci --omit=dev --ignore-scripts
 # Copy compiled ESM / CJS modules from build stage
 COPY --from=builder /app/dist ./dist
 
-# Copy mini app static files
-COPY src/miniapp/ ./miniapp/
+# Copy Next.js static site compiled files into miniapp
+COPY --from=builder /app/streamcap/out ./temp_miniapp
+RUN if [ -d ./temp_miniapp/miniapp ]; then \
+      mv ./temp_miniapp/miniapp ./miniapp && rm -rf ./temp_miniapp; \
+    else \
+      mv ./temp_miniapp ./miniapp; \
+    fi
 
 # Create recording output directory
 RUN mkdir -p /app/recordings
